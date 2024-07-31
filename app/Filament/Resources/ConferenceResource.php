@@ -2,16 +2,22 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Forms;
+use Filament\Tables;
+use App\Enums\Region;
+use App\Models\Venue;
+use Filament\Forms\Form;
+use App\Models\Conference;
+use Filament\Tables\Table;
+use Filament\Resources\Resource;
+use Filament\Forms\FormsComponent;
+use function Laravel\Prompts\text;
+use Illuminate\Database\Eloquent\Builder;
+
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\ConferenceResource\Pages;
 use App\Filament\Resources\ConferenceResource\RelationManagers;
-use App\Models\Conference;
-use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Models\Speaker;
 
 class ConferenceResource extends Resource
 {
@@ -24,23 +30,60 @@ class ConferenceResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
+                    ->label(label: 'Conference')
                     ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('description')
-                    ->required()
-                    ->maxLength(255),
+                    ->default(state: 'My Conference')
+                    ->hint(hint: "The name of the Conference")
+                    ->hintIcon(icon: 'heroicon-o-information-circle')
+                    ->maxLength(100),
+
+                Forms\Components\MarkdownEditor::make('description')
+                    //->disableToolbarButtons()
+                    //->toolbarButtons(buttons: ['h2', 'bold'])
+                    ->required(),
+
                 Forms\Components\DateTimePicker::make('start_date')
+                    ->native(condition: false)
+                    ->helperText(text: "Please include the time when the conference will start along with Date")
                     ->required(),
+
                 Forms\Components\DateTimePicker::make('end_date')
+                    ->native(condition: false)
+                    ->helperText(text: "Please include the tentative time when the Conference will end")
                     ->required(),
-                Forms\Components\TextInput::make('status')
+
+                Forms\Components\Toggle::make(name: 'is_published')
+                    ->default(state: true),
+
+                Forms\Components\Select::make('status')
+                    ->options(options: [
+                        'draft' => 'Draft',
+                        'published' => 'Published',
+                        'archieved' => 'Archieved'
+                    ])
+                    ->required(),
+
+                Forms\Components\Select::make(name: 'region')
+                    ->live()
                     ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('region')
-                    ->required()
-                    ->maxLength(255),
+                    ->enum(enum: Region::class)
+                    ->options(options: Region::class),
+
                 Forms\Components\Select::make('venue_id')
-                    ->relationship('venue', 'name'),
+                    ->searchable()
+                    ->preload()
+                    ->editOptionForm(Venue::getForm())
+                    ->createOptionForm(Venue::getForm())
+                    ->relationship('venue', 'name', modifyQueryUsing: function (Builder $query, Forms\Get $get) {
+                        return $query->where(column: 'region', operator: $get('region'));
+                    }),
+
+                // Forms\Components\CheckboxList::make('speakers')
+                //     ->relationship(name: 'speakers', titleAttribute: 'name')
+                //     ->options(
+                //         options: Speaker::all()->pluck('name', 'id')
+                //     )
+                //     ->searchable()
             ]);
     }
 
@@ -49,6 +92,7 @@ class ConferenceResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label(label: 'Conference')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('description')
                     ->searchable(),
