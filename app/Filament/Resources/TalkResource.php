@@ -2,16 +2,26 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\TalkResource\Pages;
-use App\Filament\Resources\TalkResource\RelationManagers;
-use App\Models\Talk;
+use App\Enums\TalkLength;
+use App\Enums\TalkStatus;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use App\Models\Talk;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
+use Filament\Resources\Resource;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Actions;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Forms\Components\Actions\Action;
+use App\Filament\Resources\TalkResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\TalkResource\RelationManagers;
 
 class TalkResource extends Resource
 {
@@ -25,13 +35,46 @@ class TalkResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('title')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->columnSpanFull(),
                 Forms\Components\Textarea::make('abstract')
                     ->required()
                     ->columnSpanFull(),
                 Forms\Components\Select::make('speaker_id')
                     ->relationship('speaker', 'name')
-                    ->required(),
+                    ->required()
+                    ->columnSpanFull(),
+
+                Select::make('status')
+                    ->enum(enum: TalkStatus::class)
+                    ->options(options: TalkStatus::class),
+                Select::make('length')
+                    ->enum(enum: TalkLength::class)
+                    ->options(options: TalkLength::class),
+                Toggle::make('new_talk'),
+
+                Actions::make([
+                    Action::make('star')
+                        ->label('Fill with Factory Data')
+                        ->icon('heroicon-m-star')
+                        ->visible(function (string $operation) {
+                            if ($operation !== 'create') {
+                                return false;
+                            }
+
+                            if (!app()->environment('local')) {
+                                return false;
+                            }
+
+                            return true;
+                        })
+                        ->requiresConfirmation()
+                        ->action(function ($livewire) {
+                            $data = Talk::factory()->make()->toArray();
+                            //unset($data['speaker_id']);
+                            $livewire->form->fill($data);
+                        }),
+                ]),
             ]);
     }
 
@@ -40,18 +83,32 @@ class TalkResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
+                    ->description(function (Talk $record) {
+                        return Str::of($record->abstract)->limit(40);
+                    })
+                    ->sortable()
                     ->searchable(),
+                // Tables\Columns\TextColumn::make('abstract')
+                //     ->wrap(),
+                ImageColumn::make('speaker.avatar')
+                    ->label('Avatar')
+                    ->circular()
+                    ->defaultImageUrl(function (Talk $record) {
+                        return 'https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=' . urlencode($record->speaker->name);
+                    }),
                 Tables\Columns\TextColumn::make('speaker.name')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->searchable(),
+                IconColumn::make('new_talk')->boolean(),
+                TextColumn::make('status')->badge()
+                    ->color(function ($state) {
+                        return $state->getColor();
+                    }),
+
+                IconColumn::make('length')
+                    ->icon(function ($state) {
+                        return $state->getLengthIcon();
+                    }),
             ])
             ->filters([
                 //

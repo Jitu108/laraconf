@@ -39,6 +39,7 @@ class ConferenceResource extends Resource
                     ->label(label: 'Conference')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('description')
+                    ->wrap()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('start_date')
                     ->dateTime()
