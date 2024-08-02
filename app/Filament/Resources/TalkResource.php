@@ -93,6 +93,9 @@ class TalkResource extends Resource
                     ->description(function (Talk $record) {
                         return Str::of($record->abstract)->limit(40);
                     })
+                    ->tooltip(function (Talk $record) {
+                        return $record->abstract;
+                    })
                     ->sortable()
                     ->searchable(),
                 // Tables\Columns\TextColumn::make('abstract')
