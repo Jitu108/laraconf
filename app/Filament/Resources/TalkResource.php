@@ -2,22 +2,25 @@
 
 namespace App\Filament\Resources;
 
-use App\Enums\TalkLength;
-use App\Enums\TalkStatus;
 use Filament\Forms;
 use App\Models\Talk;
 use Filament\Tables;
 use Filament\Forms\Form;
+use App\Enums\TalkLength;
+use App\Enums\TalkStatus;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use Filament\Resources\Resource;
+use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Actions;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Forms\Components\Actions\Action;
 use App\Filament\Resources\TalkResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -81,6 +84,10 @@ class TalkResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->persistFiltersInSession()
+            ->filtersTriggerAction(function ($action) {
+                return $action->button()->label('Filters');
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('title')
                     ->description(function (Talk $record) {
@@ -111,7 +118,20 @@ class TalkResource extends Resource
                     }),
             ])
             ->filters([
-                //
+                TernaryFilter::make('new_talk'),
+                SelectFilter::make('speaker')
+                    ->relationship('speaker', 'name')
+                    ->multiple()
+                    ->searchable()
+                    ->preload(),
+                Filter::make('has_avatar')
+                    ->label('Show only Speakers with Avatar')
+                    ->toggle()
+                    ->query(function ($query) {
+                        return $query->whereHas('speaker', function (Builder $query) {
+                            $query->whereNotNull('avatar');
+                        });
+                    })
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
