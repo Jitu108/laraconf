@@ -49,7 +49,8 @@ class SpeakerResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->slideOver(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -70,7 +71,7 @@ class SpeakerResource extends Resource
         return [
             'index' => Pages\ListSpeakers::route('/'),
             'create' => Pages\CreateSpeaker::route('/create'),
-            'edit' => Pages\EditSpeaker::route('/{record}/edit'),
+            //'edit' => Pages\EditSpeaker::route('/{record}/edit'),
         ];
     }
 }

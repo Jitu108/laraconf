@@ -51,7 +51,8 @@ class VenueResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->slideOver(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -72,7 +73,7 @@ class VenueResource extends Resource
         return [
             'index' => Pages\ListVenues::route('/'),
             'create' => Pages\CreateVenue::route('/create'),
-            'edit' => Pages\EditVenue::route('/{record}/edit'),
+            //'edit' => Pages\EditVenue::route('/{record}/edit'),
         ];
     }
 }

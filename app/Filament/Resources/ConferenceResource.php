@@ -67,7 +67,8 @@ class ConferenceResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->slideOver(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -88,7 +89,7 @@ class ConferenceResource extends Resource
         return [
             'index' => Pages\ListConferences::route('/'),
             'create' => Pages\CreateConference::route('/create'),
-            'edit' => Pages\EditConference::route('/{record}/edit'),
+            //'edit' => Pages\EditConference::route('/{record}/edit'),
         ];
     }
 }

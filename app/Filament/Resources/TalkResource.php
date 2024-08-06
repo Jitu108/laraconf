@@ -17,10 +17,12 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Actions;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Filters\TernaryFilter;
+use Illuminate\Database\Eloquent\Collection;
 use Filament\Forms\Components\Actions\Action;
 use App\Filament\Resources\TalkResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -137,12 +139,77 @@ class TalkResource extends Resource
                     })
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->slideOver(),
+
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('approve')
+                        ->disabled(function (Talk $record) {
+                            return $record->canApproveOrReject() == false;
+                        })
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->action((function (Talk $record) {
+                            $record->approve();
+                        }))
+                        ->after(function () {
+                            Notification::make()->success()->title('Talk was approved')
+                                ->body('The speaker has been notified and the talk has been added to the conference schedule')
+                                ->send();
+                        }),
+
+                    Tables\Actions\Action::make('reject')
+                        ->requiresConfirmation()
+                        ->disabled(function (Talk $record) {
+                            return $record->canApproveOrReject() == false;
+                        })
+                        ->icon('heroicon-o-no-symbol')
+                        ->color('warning')
+                        ->action((function (Talk $record) {
+                            $record->reject();
+                        }))
+                        ->after(function () {
+                            Notification::make()->danger()->title('Talk was rejected')
+                                ->body('The speaker has been notified that the talk was rejected')
+                                ->send();
+                        }),
+
+                    // Tables\Actions\Action::make('revertToSubmitted')
+                    //     ->action(function (Talk $record) {
+                    //         $record->revertToSubmitted();
+                    //     })
+                ])
+
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('approve')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->action(function (Collection $records) {
+                            $records->each->approve();
+                        }),
+                    Tables\Actions\BulkAction::make('reject')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('warning')
+                        ->action(function (Collection $records) {
+                            $records->each->reject();
+                        }),
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+
+
                 ]),
+
+
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('export')
+                    ->tooltip('This will export all records visiblein the table. Adjust filters to export a subset of recrods.')
+                    ->action(function ($livewire) {
+                        $livewire->getFilteredTableQuery();
+                    })
             ]);
     }
 
@@ -158,7 +225,7 @@ class TalkResource extends Resource
         return [
             'index' => Pages\ListTalks::route('/'),
             'create' => Pages\CreateTalk::route('/create'),
-            'edit' => Pages\EditTalk::route('/{record}/edit'),
+            //'edit' => Pages\EditTalk::route('/{record}/edit'),
         ];
     }
 }

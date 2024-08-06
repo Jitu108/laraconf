@@ -29,4 +29,46 @@ class Talk extends Model
     {
         return $this->belongsToMany(Conference::class);
     }
+
+    public function approve(): void
+    {
+        if ($this->status == TalkStatus::SUBMITTED) {
+            $this->status = TalkStatus::APPROVED;
+            //email the speaker that the talk is accepted
+
+            $this->save();
+        }
+    }
+
+    public function canApproveOrReject(): bool
+    {
+        if ($this->status == TalkStatus::SUBMITTED) {
+            return true;
+        }
+        return false;
+    }
+
+    public function reject(): void
+    {
+        if ($this->status == TalkStatus::SUBMITTED) {
+            $this->status = TalkStatus::REJECTED;
+            //email the speaker that the talk is accepted
+
+            $this->save();
+        }
+    }
+
+    public function revertToSubmitted(): void
+    {
+        $this->status = TalkStatus::SUBMITTED;
+        $this->save();
+    }
+
+    public function canReject(): bool
+    {
+        if ($this->status == TalkStatus::SUBMITTED) {
+            return true;
+        }
+        return false;
+    }
 }
