@@ -2,17 +2,23 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\SpeakerResource\Pages;
-use App\Filament\Resources\SpeakerResource\RelationManagers;
-use App\Models\Speaker;
 use Filament\Forms;
-use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use App\Models\Speaker;
+use Filament\Forms\Form;
+use App\Enums\TalkStatus;
 use Filament\Tables\Table;
+use Filament\Infolists\Infolist;
+use Filament\Resources\Resource;
+use Filament\Infolists\Components\Group;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Infolists\Components\Section;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ImageEntry;
+use App\Filament\Resources\SpeakerResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\SpeakerResource\RelationManagers\TalksRelationManager;
 
 class SpeakerResource extends Resource
 {
@@ -35,6 +41,7 @@ class SpeakerResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('twitter_handle')
+                    ->prefix('@')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -49,8 +56,9 @@ class SpeakerResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
-                    ->slideOver(),
+                // Tables\Actions\EditAction::make()
+                //     ->slideOver(),
+                Tables\Actions\ViewAction::make()
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -59,10 +67,60 @@ class SpeakerResource extends Resource
             ]);
     }
 
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Section::make('Personal Information')
+                    ->columns(3)
+                    ->schema([
+                        ImageEntry::make('avatar')
+                            ->circular(),
+                        Group::make()
+                            ->columnSpan(2)
+                            ->columns(2)
+                            ->schema([
+                                TextEntry::make('name'),
+                                TextEntry::make('email'),
+                                TextEntry::make('twitter_handle')
+                                    ->label('Twiter')
+                                    ->url(function ($record) {
+                                        return 'https://twitter.com/' . $record->twitter_handle;
+                                    })
+                                    ->openUrlInNewTab()
+                                    ->getStateUsing(function ($record) {
+                                        return '@' . $record->twitter_handle;
+                                    }),
+                                TextEntry::make('has_spoken')
+                                    ->getStateUsing(function ($record) {
+                                        return $record->talks()->where('status', TalkStatus::APPROVED)->count() > 0 ? 'Previous Speaker' : 'Has Not Spoken';
+                                        //return $record->has_spoken ? 'Yes' : 'No';
+                                    })
+                                    ->badge()
+                                    ->color(function ($state) {
+                                        if ($state == 'Previous Speaker') {
+                                            return 'success';
+                                        }
+                                        return 'primary';
+                                    })
+                            ])
+                    ]),
+                Section::make('Other Information')
+                    ->schema([
+                        TextEntry::make('bio')
+                            ->extraAttributes(['class' => 'prose dark:prose-invert'])
+                            ->html(),
+                        TextEntry::make('qualifications')
+                        // ->listWithLineBreaks()
+                        // ->bulleted()
+                    ])
+            ]);
+    }
+
     public static function getRelations(): array
     {
         return [
-            //
+            TalksRelationManager::class,
         ];
     }
 
@@ -72,6 +130,7 @@ class SpeakerResource extends Resource
             'index' => Pages\ListSpeakers::route('/'),
             'create' => Pages\CreateSpeaker::route('/create'),
             //'edit' => Pages\EditSpeaker::route('/{record}/edit'),
+            'view' => Pages\ViewSpeaker::route('/{record}')
         ];
     }
 }

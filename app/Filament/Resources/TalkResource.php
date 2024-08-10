@@ -37,50 +37,7 @@ class TalkResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
-            ->schema([
-                Forms\Components\TextInput::make('title')
-                    ->required()
-                    ->maxLength(255)
-                    ->columnSpanFull(),
-                Forms\Components\Textarea::make('abstract')
-                    ->required()
-                    ->columnSpanFull(),
-                Forms\Components\Select::make('speaker_id')
-                    ->relationship('speaker', 'name')
-                    ->required()
-                    ->columnSpanFull(),
-
-                Select::make('status')
-                    ->enum(enum: TalkStatus::class)
-                    ->options(options: TalkStatus::class),
-                Select::make('length')
-                    ->enum(enum: TalkLength::class)
-                    ->options(options: TalkLength::class),
-                Toggle::make('new_talk'),
-
-                Actions::make([
-                    Action::make('star')
-                        ->label('Fill with Factory Data')
-                        ->icon('heroicon-m-star')
-                        ->visible(function (string $operation) {
-                            if ($operation !== 'create') {
-                                return false;
-                            }
-
-                            if (!app()->environment('local')) {
-                                return false;
-                            }
-
-                            return true;
-                        })
-                        ->requiresConfirmation()
-                        ->action(function ($livewire) {
-                            $data = Talk::factory()->make()->toArray();
-                            //unset($data['speaker_id']);
-                            $livewire->form->fill($data);
-                        }),
-                ]),
-            ]);
+            ->schema(Talk::getForm());
     }
 
     public static function table(Table $table): Table

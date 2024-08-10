@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use Filament\Tables\Actions\EditAction;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\ServiceProvider;
+use Filament\Tables\Actions\CreateAction;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,5 +23,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Model::unguard();
+        CreateAction::configureUsing(function ($action) {
+            return $action->slideOver();
+        });
+
+        EditAction::configureUsing(function ($action) {
+            return $action->slideOver();
+        });
     }
 }

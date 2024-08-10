@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\RichEditor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -60,9 +61,10 @@ class Speaker extends Model
                 ->email()
                 ->required()
                 ->maxLength(255),
-            Textarea::make('bio')
+            RichEditor::make('bio')
                 ->columnSpanFull(),
             TextInput::make('twitter_handle')
+                ->prefix('@')
                 ->maxLength(255),
             CheckboxList::make('qualifications')
                 ->options(self::QUALIFICATIONS)
