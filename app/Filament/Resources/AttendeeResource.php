@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\AttendeeResource\RelationManagers;
 use App\Filament\Resources\AttendeeResource\Widgets\AttendeeChartWidget;
 use App\Filament\Resources\AttendeeResource\Widgets\AttendeesStatsWidget;
+use Awcodes\Shout\Components\Shout;
 use Illuminate\Database\Eloquent\Model;
 
 class AttendeeResource extends Resource
@@ -49,6 +50,16 @@ class AttendeeResource extends Resource
     {
         return $form
             ->schema([
+                Shout::make('warn-price')
+                    ->type('warning')
+                    ->visible(function (Forms\Get $get) {
+                        return $get('ticket_cost') > 100;
+                    })
+                    ->columnSpanFull()
+                    ->content(function (Forms\Get $get) {
+                        $price = $get('ticket_cost');
+                        return 'This is $' . $price - 500 . ' more than the average ticket price.';
+                    }),
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
@@ -57,6 +68,8 @@ class AttendeeResource extends Resource
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('ticket_cost')
+                    //->live()
+                    ->lazy()
                     ->required()
                     ->numeric(),
                 Forms\Components\Toggle::make('is_paid')
